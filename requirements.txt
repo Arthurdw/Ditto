@@ -1,3 +1,4 @@
 pincer
 python-dotenv
 colorama
+aiohttp[speedups]
