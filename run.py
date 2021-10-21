@@ -10,7 +10,7 @@ from colorama import Style
 from dotenv import load_dotenv
 from pincer import Client, __version__
 
-from utils import LogLevel, log, Webserver, DB, Webhook, WebhookType
+from utils import LogLevel, log, Webserver, DB
 
 
 class Ditto(Client):
