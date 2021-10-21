@@ -5,6 +5,7 @@ from asyncio import ensure_future, get_event_loop
 from json import loads, JSONDecodeError
 from threading import Thread
 from typing import Dict
+from uuid import UUID
 
 from aiohttp.web import Application, Response, post, AppRunner, TCPSite, Request
 from pincer.utils.types import Coro
@@ -19,9 +20,12 @@ class Webserver:
     @staticmethod
     async def handle(request: Request) -> Response:
         try:
-            await Webserver.callbacks["webhook"](request.match_info["id"], loads(await request.content.read()))
+            print(request.match_info["id"])
+            await Webserver.callbacks["webhook"](UUID(request.match_info["id"]), loads(await request.content.read()))
         except JSONDecodeError:
             return Response(status=400, body="No valid JSON body has been passed!")
+        except ValueError:
+            return Response(status=400, body="Invalid webhook id supplied!")
         except IndexError:
             return Response(status=404, body="Webhook not found!")
         return Response(body="Ok")
