@@ -2,7 +2,7 @@
 # Full MIT License can be found in `LICENSE` at the project root.
 
 from asyncio import ensure_future, get_event_loop
-from json import loads
+from json import loads, JSONDecodeError
 from threading import Thread
 from typing import Dict
 
@@ -20,9 +20,10 @@ class Webserver:
     async def handle(request: Request) -> Response:
         try:
             await Webserver.callbacks["webhook"](request.match_info["id"], loads(await request.content.read()))
-        except Exception as e:
-            # TODO: proper response
-            raise e
+        except JSONDecodeError:
+            return Response(status=400, body="No valid JSON body has been passed!")
+        except IndexError:
+            return Response(status=404, body="Webhook not found!")
         return Response(body="Ok")
 
     @staticmethod
