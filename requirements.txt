@@ -2,3 +2,4 @@ pincer
 python-dotenv
 colorama
 aiohttp[speedups]
+scylla-driver
