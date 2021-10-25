@@ -29,13 +29,17 @@ class Logging:
 
     @staticmethod
     def __print(level: LogLevel, args: Tuple[Any]):
-        if level >= Logging.__level:
+        if level <= Logging.__level:
             print(
                 Logging.__colors[level],
                 " ".join(tuple(map(lambda x: str(x), args))),
                 Style.RESET_ALL,
                 sep=""
             )
+
+    @staticmethod
+    def debug(*args: Any):
+        Logging.__print(LogLevel.DEBUG, args)
 
     @staticmethod
     def info(*args: Any):

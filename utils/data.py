@@ -7,9 +7,10 @@ from os import getenv
 from typing import TYPE_CHECKING
 
 from cassandra.cluster import Cluster
+from cassandra.query import dict_factory
 
-from . import Webhook
 from .db_statements import stmt
+from .objects.webhook import Webhook
 
 if TYPE_CHECKING:
     from uuid import UUID
@@ -22,6 +23,7 @@ class ScyllaDB:
         self.hosts = [host.strip().lower() for host in getenv("DB_HOST").split(',')]
         self.cluster = Cluster(self.hosts)
         self.session = self.cluster.connect()
+        self.session.row_factory = dict_factory
         self.__setup_db()
         self.__prepare_statements()
 
@@ -46,10 +48,6 @@ class ScyllaDB:
     def get_webhook(self, webhook_id: UUID) -> Webhook:
         fetch = self.session.execute(stmt.webhooks.get, (webhook_id,))
         if result := fetch.one():
-            print(result, '-------', type(result))
-            return Webhook(*result)
+            return Webhook(**result)
 
         raise IndexError
-
-
-DB = ScyllaDB
