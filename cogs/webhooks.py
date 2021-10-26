@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+from re import sub, compile as prepare
 from typing import TYPE_CHECKING, List
 from uuid import uuid4
 
@@ -34,19 +35,19 @@ class Webhooks:
             WebhookType.GITHUB_PUSH: self.process_github_push_hook
         }
 
+        self.remove_emoji = prepare(r"(:\w+:)")
+
     async def webhook_handler(self, hook: UUID, data: Dict[str, Any]):
         webhook = self.client.db.get_webhook(hook)
         channel = Webhooks.__cache.get(webhook.channel)
-
         if not channel:
             channel = await self.client.get_channel(int(webhook.channel))
-            Webhooks.__cache[channel.id] = channel
+            Webhooks.__cache[webhook.channel] = channel
 
         if handler := self.__handlers.get(webhook.hook_type):
             await handler(webhook, channel, data)
 
-    @staticmethod
-    def convert_github_commit(data: Dict[str, Any]) -> List[Embed]:
+    def convert_github_commit(self, data: Dict[str, Any]) -> List[Embed]:
         commits = list(filter(lambda commit: commit["author"].get("username"), data["commits"]))
 
         def form_commit_small(commit: Dict[str, Any]) -> str:
@@ -67,7 +68,7 @@ class Webhooks:
             embed = Embed(
                 color=0x42579e,
             ).set_author(
-                name=commit["message"],
+                name=str(sub(self.remove_emoji, '', commit["message"])).strip(),
                 url=commit["url"]
             ).set_footer(
                 text=f"Pushed by {commit['author']['username']}"
@@ -111,15 +112,15 @@ class Webhooks:
         except KeyError:
             return
 
+        role_mentions = [f"<@&{role}>" for role in webhook.role_mentions] if webhook.role_mentions else []
+        user_mentions = [f"<@!{user}>" for user in webhook.user_mentions] if webhook.user_mentions else []
+
         await channel.send(Message(
-            "".join(
-                [f"<@&{role}>" for role in webhook.role_mentions] +
-                [f"<@!{user}>" for user in webhook.user_mentions]
-            ),
+            "".join(role_mentions + user_mentions),
             embeds=[embeds.pop(0)]
         ))
 
-        for i in range(len(embeds) // 10):
+        for i in range((len(embeds) // 10) + 1):
             await channel.send(Message(embeds=embeds[i * 10:i * 10 + 10]))
 
     @command(
