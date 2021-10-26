@@ -8,7 +8,7 @@ from uuid import UUID
 
 
 class WebhookType(IntEnum):
-    DISCORD = 1
+    GITHUB_PUSH = 1
 
 
 @dataclass

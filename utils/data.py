@@ -46,8 +46,7 @@ class ScyllaDB:
         self.session.execute(stmt.webhooks.create, webhook.serialize())
 
     def get_webhook(self, webhook_id: UUID) -> Webhook:
-        fetch = self.session.execute(stmt.webhooks.get, (webhook_id,))
-        if result := fetch.one():
+        if result := self.session.execute(stmt.webhooks.get, (webhook_id,)).one():
             return Webhook(**result)
 
         raise IndexError

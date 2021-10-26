@@ -20,7 +20,6 @@ class Webserver:
     @staticmethod
     async def handle(request: Request) -> Response:
         try:
-            print(request.match_info["id"])
             await Webserver.callbacks["webhook"](UUID(request.match_info["id"]), loads(await request.content.read()))
         except JSONDecodeError:
             return Response(status=400, body="No valid JSON body has been passed!")
