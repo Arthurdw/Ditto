@@ -3,10 +3,13 @@
 
 from __future__ import annotations
 
-from collections import defaultdict
 from typing import TYPE_CHECKING, List
+from uuid import uuid4
 
-from pincer.objects import Embed, Message
+from pincer import command, Choices, Descripted
+from pincer.objects import Embed, Message, InteractionFlags
+from pincer.objects.guild import TextChannel
+from utils import Webhook
 from utils import Webserver, log, WebhookType
 
 if TYPE_CHECKING:
@@ -15,11 +18,10 @@ if TYPE_CHECKING:
     from uuid import UUID
     from run import Ditto
     from typing import Dict, Any
-    from utils import Webhook
 
 
 class Webhooks:
-    __cache: Dict[str, Dict[Snowflake, Channel]] = defaultdict(dict)
+    __cache: Dict[Snowflake, Channel] = {}
 
     def __init__(self, client: Ditto):
         self.client = client
@@ -29,25 +31,16 @@ class Webhooks:
         log.debug("Successfully started webserver!")
 
         self.__handlers = {
-            WebhookType.GITHUB: self.process_github_hook
+            WebhookType.GITHUB_PUSH: self.process_github_push_hook
         }
-
-        # self.db.create_webhook(Webhook(
-        #     UUID("857188e6-329c-11ec-95fe-e73fb543f0f7"),
-        #     WebhookType.GITHUB,
-        #     "728278830770290759",
-        #     "728284689261002832",
-        #     ["728284888666603591", "776227954656280577"],
-        #     ["232182858251239424", "640625683797639181"]
-        # ))
 
     async def webhook_handler(self, hook: UUID, data: Dict[str, Any]):
         webhook = self.client.db.get_webhook(hook)
-        channel = Webhooks.__cache[webhook.guild].get(webhook.channel)
+        channel = Webhooks.__cache.get(webhook.channel)
 
         if not channel:
             channel = await self.client.get_channel(int(webhook.channel))
-            Webhooks.__cache[webhook.guild][channel.id] = channel
+            Webhooks.__cache[channel.id] = channel
 
         if handler := self.__handlers.get(webhook.hook_type):
             await handler(webhook, channel, data)
@@ -112,7 +105,7 @@ class Webhooks:
 
         return embeds
 
-    async def process_github_hook(self, webhook: Webhook, channel: Channel, data: Dict[str, Any]):
+    async def process_github_push_hook(self, webhook: Webhook, channel: Channel, data: Dict[str, Any]):
         embeds = self.convert_github_commit(data)
 
         await channel.send(Message(
@@ -125,6 +118,59 @@ class Webhooks:
 
         for i in range(len(embeds) // 10):
             await channel.send(Message(embeds=embeds[i * 10:i * 10 + 10]))
+
+    @command(
+        description="Create a new webhook!",
+        guild=728278830770290759,
+
+        cooldown=10
+    )
+    async def add(
+            self,
+            notification: Descripted[
+                Choices[
+                    Descripted['1', "github push notifications"]
+                ],
+                "The type of webhook you want to add!"
+            ],
+            channel: Descripted[
+                Channel,
+                "The channel to whom the message should be sent when the webhook has been invoked."
+            ]
+    ):
+        if not isinstance(channel, TextChannel):
+            return Message(
+                embeds=[
+                    Embed(
+                        description="Can only send the webhook updates to a text channel!",
+                        color=0xff0000
+                    )
+                ],
+                flags=InteractionFlags.EPHEMERAL
+            )
+
+        webhook = Webhook(
+            id=uuid4(),
+            hook_type=WebhookType(int(notification)),
+            guild=str(channel.guild_id),
+            channel=str(channel.id),
+            role_mentions=[],
+            user_mentions=[]
+        )
+
+        self.client.db.create_webhook(webhook)
+        return Message(
+            embeds=[
+                Embed(
+                    description=f"""Successfully created webhook!
+                    Please add the following url to your github push event:
+                    [`{Webserver.url}/webhook/{webhook.id}`]({Webserver.url}/webhook/{webhook.id})
+                    """,
+                    color=0x00ff00
+                )
+            ],
+            flags=InteractionFlags.EPHEMERAL
+        )
 
 
 setup = Webhooks

@@ -12,6 +12,7 @@ from pincer.utils.types import Coro
 
 
 class Webserver:
+    url = "https://ditto.arthurdw.com"
     callbacks: Dict[str, Coro] = {}
 
     def __init__(self):
