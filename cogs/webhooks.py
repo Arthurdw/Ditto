@@ -106,7 +106,10 @@ class Webhooks:
         return embeds
 
     async def process_github_push_hook(self, webhook: Webhook, channel: Channel, data: Dict[str, Any]):
-        embeds = self.convert_github_commit(data)
+        try:
+            embeds = self.convert_github_commit(data)
+        except KeyError:
+            return
 
         await channel.send(Message(
             "".join(
