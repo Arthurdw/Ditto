@@ -95,7 +95,7 @@ class Webhooks:
                 description=changes[:1997] + append
             ).set_author(
                 icon_url=data["sender"]["avatar_url"],
-                name=f"{len(data['commits'])} new commits",
+                name=f"{len(data['commits'])} new commit{'s' if len(data['commits']) > 1 else ''}",
                 url=data["compare"]
             ).set_footer(
                 text=data["repository"]["name"],

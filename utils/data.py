@@ -34,6 +34,7 @@ class ScyllaDB:
         self.session.execute(stmt.webhooks.init)
 
     def __prepare_statements(self):
+        # TODO: Make dynamic
         stmt.webhooks.create = self.session.prepare(stmt.webhooks.create)
         stmt.webhooks.get = self.session.prepare(stmt.webhooks.get)
         stmt.webhooks.delete = self.session.prepare(stmt.webhooks.delete)
