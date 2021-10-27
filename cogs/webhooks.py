@@ -125,8 +125,6 @@ class Webhooks:
 
     @command(
         description="Create a new webhook!",
-        guild=728278830770290759,
-
         cooldown=10
     )
     async def add(
