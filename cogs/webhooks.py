@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING, List
 from uuid import uuid4
 
 from pincer import command, Choices, Descripted
-from pincer.objects import Embed, Message, InteractionFlags
+from pincer.objects import Embed, Message, InteractionFlags, MessageContext
 from pincer.objects.guild import TextChannel
 from utils import Webhook
 from utils import Webserver, log, WebhookType
@@ -27,7 +27,7 @@ class Webhooks:
     def __init__(self, client: Ditto):
         self.client = client
         log.debug("Starting webserver...")
-        Webserver()
+        self.web = Webserver()
         Webserver.callbacks["webhook"] = self.webhook_handler
         log.debug("Successfully started webserver!")
 
@@ -131,6 +131,7 @@ class Webhooks:
     )
     async def add(
             self,
+            ctx: MessageContext,
             notification: Descripted[
                 Choices[
                     Descripted['1', "github push notifications"]
@@ -142,14 +143,15 @@ class Webhooks:
                 "The channel to whom the message should be sent when the webhook has been invoked."
             ]
     ):
-        if not isinstance(channel, TextChannel):
+        error_message = ""
+        if int(ctx.author.permissions) & 0x8 != 0x8:
+            error_message = "Only administrators can perform this command!"
+        elif not isinstance(channel, TextChannel):
+            error_message = "Can only send the webhook updates to a text channel!"
+
+        if error_message:
             return Message(
-                embeds=[
-                    Embed(
-                        description="Can only send the webhook updates to a text channel!",
-                        color=0xff0000
-                    )
-                ],
+                embeds=[Embed(description=error_message, color=0xff0000)],
                 flags=InteractionFlags.EPHEMERAL
             )
 
@@ -168,7 +170,7 @@ class Webhooks:
                 Embed(
                     description=f"""Successfully created webhook!
                     Please add the following url to your github push event:
-                    [`{Webserver.url}/webhook/{webhook.id}`]({Webserver.url}/webhook/{webhook.id})
+                    [`{self.web.base_url}/webhook/{webhook.id}`]({self.web.base_url}/webhook/{webhook.id})
                     """,
                     color=0x00ff00
                 )

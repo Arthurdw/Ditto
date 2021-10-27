@@ -3,6 +3,7 @@
 
 from asyncio import ensure_future, get_event_loop
 from json import loads, JSONDecodeError
+from os import getenv
 from threading import Thread
 from typing import Dict
 from uuid import UUID
@@ -12,11 +13,12 @@ from pincer.utils.types import Coro
 
 
 class Webserver:
-    url = "https://ditto.arthurdw.com"
     callbacks: Dict[str, Coro] = {}
 
     def __init__(self):
         Thread(target=self.__run).run()
+
+        self.base_url = getenv("BASE_URL")
 
     @staticmethod
     async def handle(request: Request) -> Response:
